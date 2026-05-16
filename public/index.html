@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>BMO Client Intelligence</title>
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #f5f5f5;
+      color: #1a1a1a;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    header {
+      background: #0033a0;
+      color: white;
+      padding: 16px 32px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    header h1 { font-size: 18px; font-weight: 600; }
+    header span { font-size: 13px; opacity: 0.7; }
+
+    .chat-area {
+      flex: 1;
+      overflow-y: auto;
+      padding: 32px;
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+
+    .welcome {
+      text-align: center;
+      margin: auto;
+      max-width: 480px;
+    }
+
+    .welcome h2 { font-size: 22px; margin-bottom: 8px; color: #0033a0; }
+    .welcome p { font-size: 14px; color: #666; line-height: 1.6; }
+
+    .suggestions {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-top: 24px;
+    }
+
+    .suggestion {
+      background: white;
+      border: 1px solid #e0e0e0;
+      border-radius: 8px;
+      padding: 12px 16px;
+      font-size: 13px;
+      color: #0033a0;
+      cursor: pointer;
+      text-align: left;
+      transition: background 0.15s;
+    }
+
+    .suggestion:hover { background: #f0f4ff; }
+
+    .message {
+      max-width: 800px;
+      width: 100%;
+      margin: 0 auto;
+    }
+
+    .message.user {
+      background: #0033a0;
+      color: white;
+      padding: 12px 18px;
+      border-radius: 12px;
+      font-size: 14px;
+      align-self: flex-end;
+      max-width: 500px;
+    }
+
+    .message.assistant {
+      background: white;
+      border: 1px solid #e0e0e0;
+      border-radius: 12px;
+      padding: 24px;
+      font-size: 14px;
+      line-height: 1.7;
+    }
+
+    .message.assistant h2 {
+      font-size: 15px;
+      font-weight: 600;
+      color: #0033a0;
+      margin: 20px 0 8px;
+      padding-bottom: 4px;
+      border-bottom: 1px solid #e8eef8;
+    }
+
+    .message.assistant h2:first-child { margin-top: 0; }
+    .message.assistant p { margin-bottom: 8px; }
+    .message.assistant ul { padding-left: 20px; margin-bottom: 8px; }
+    .message.assistant li { margin-bottom: 4px; }
+    .message.assistant strong { color: #1a1a1a; }
+
+    .searching {
+      font-size: 13px;
+      color: #888;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      max-width: 800px;
+      margin: 0 auto;
+    }
+
+    .dot-pulse { display: flex; gap: 4px; }
+    .dot-pulse span {
+      width: 6px; height: 6px;
+      background: #0033a0;
+      border-radius: 50%;
+      animation: pulse 1.2s infinite;
+    }
+    .dot-pulse span:nth-child(2) { animation-delay: 0.2s; }
+    .dot-pulse span:nth-child(3) { animation-delay: 0.4s; }
+
+    @keyframes pulse {
+      0%, 80%, 100% { opacity: 0.2; transform: scale(0.8); }
+      40% { opacity: 1; transform: scale(1); }
+    }
+
+    .input-area {
+      background: white;
+      border-top: 1px solid #e0e0e0;
+      padding: 16px 32px;
+      display: flex;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .input-area input {
+      flex: 1;
+      padding: 12px 16px;
+      border: 1px solid #e0e0e0;
+      border-radius: 8px;
+      font-size: 14px;
+      outline: none;
+      transition: border 0.15s;
+    }
+
+    .input-area input:focus { border-color: #0033a0; }
+
+    .input-area button {
+      background: #0033a0;
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 8px;
+      font-size: 14px;
+      cursor: pointer;
+      font-weight: 500;
+      transition: background 0.15s;
+    }
+
+    .input-area button:hover { background: #002280; }
+    .input-area button:disabled { background: #aaa; cursor: not-allowed; }
+  </style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1>BMO Client Intelligence</h1>
+    <span>AI-powered pre-meeting research assistant</span>
+  </div>
+</header>
+
+<div class="chat-area" id="chatArea">
+  <div class="welcome" id="welcome">
+    <h2>Client Research Assistant</h2>
+    <p>Enter a company name or ask a financial question. I'll search the web and build you a structured intelligence brief in seconds.</p>
+    <div class="suggestions">
+      <button class="suggestion" onclick="ask('Research Shopify Inc for a client meeting')">Research Shopify Inc for a client meeting</button>
+      <button class="suggestion" onclick="ask('What are the latest risks facing TD Bank?')">What are the latest risks facing TD Bank?</button>
+      <button class="suggestion" onclick="ask('Summarize recent Canadian economic conditions for a wealth client')">Summarize recent Canadian economic conditions for a wealth client</button>
+    </div>
+  </div>
+</div>
+
+<div class="input-area">
+  <input type="text" id="userInput" placeholder="Enter a company name or financial question..." />
+  <button id="sendBtn" onclick="sendMessage()">Research</button>
+</div>
+
+<script>
+  const chatArea = document.getElementById('chatArea');
+  const userInput = document.getElementById('userInput');
+  const sendBtn = document.getElementById('sendBtn');
+  let conversationHistory = [];
+
+  userInput.addEventListener('keydown', e => {
+    if (e.key === 'Enter') sendMessage();
+  });
+
+  function ask(text) {
+    userInput.value = text;
+    sendMessage();
+  }
+
+  function addMessage(role, html) {
+    const div = document.createElement('div');
+    div.className = `message ${role}`;
+    div.innerHTML = html;
+    chatArea.appendChild(div);
+    chatArea.scrollTop = chatArea.scrollHeight;
+    return div;
+  }
+
+  async function sendMessage() {
+    const text = userInput.value.trim();
+    if (!text) return;
+
+    document.getElementById('welcome')?.remove();
+    userInput.value = '';
+    sendBtn.disabled = true;
+
+    addMessage('user', text);
+    conversationHistory.push({ role: 'user', content: text });
+
+    const searching = document.createElement('div');
+    searching.className = 'searching';
+    searching.innerHTML = `<div class="dot-pulse"><span></span><span></span><span></span></div> Searching the web and building your brief...`;
+    chatArea.appendChild(searching);
+    chatArea.scrollTop = chatArea.scrollHeight;
+
+    const assistantDiv = addMessage('assistant', '');
+    let fullText = '';
+
+    try {
+      const response = await fetch('/research', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ messages: conversationHistory })
+      });
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+
+      searching.remove();
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        const lines = decoder.decode(value).split('\n');
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            try {
+              const data = JSON.parse(line.slice(6));
+              if (data.text) {
+                fullText += data.text;
+                assistantDiv.innerHTML = marked.parse(fullText);
+                chatArea.scrollTop = chatArea.scrollHeight;
+              }
+            } catch {}
+          }
+        }
+      }
+
+      conversationHistory.push({ role: 'assistant', content: fullText });
+
+    } catch (err) {
+      searching.remove();
+      assistantDiv.innerHTML = 'Something went wrong. Please try again.';
+    }
+
+    sendBtn.disabled = false;
+    userInput.focus();
+  }
+</script>
+
+</body>
+</html>
